@@ -13,7 +13,7 @@ export default class Setup extends Command {
 	static args = {
 		component: Args.string({
 			description: "Component to install",
-			required: true,
+			required: false,
 			options: COMPONENTS,
 		}),
 	};
@@ -44,7 +44,6 @@ export default class Setup extends Command {
 				check: flags.check,
 			},
 		};
-
 		await initTheme();
 		await runSetupCommand(cmd);
 	}

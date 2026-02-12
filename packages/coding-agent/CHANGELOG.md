@@ -5,6 +5,22 @@
 ### Fixed
 
 - Fixed `omp setup` to show friendly error/help for missing or invalid component arguments instead of surfacing an uncaught exception ([#35](https://github.com/can1357/oh-my-pi/issues/35))
+## [12.0.0] - 2026-02-12
+
+### Added
+
+- Added `getAllServerNames()` method to MCPManager for enumerating all known servers
+
+### Changed
+
+- Changed default edit mode from `patch` to `hashline` for more precise code modifications
+- Changed `readHashLines` setting default from false to true to enable hash line reading by default
+
+### Fixed
+
+- Fixed `omp setup` crashing with uncaught exception when no component argument provided; now shows help ([#35](https://github.com/can1357/oh-my-pi/issues/35))
+- Fixed `/mcp list` showing "No MCP servers configured" when servers are loaded from discovery sources like `.claude.json`, `.cursor/mcp.json`, `.vscode/mcp.json` ([#34](https://github.com/can1357/oh-my-pi/issues/34))
+- Fixed model selector sorting to show newest models first within each provider instead of alphabetical; `-latest` aliases now appear before dated versions ([#37](https://github.com/can1357/oh-my-pi/issues/37))
 
 ## [11.14.4] - 2026-02-12
 
