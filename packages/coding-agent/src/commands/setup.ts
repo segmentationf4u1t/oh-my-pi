@@ -1,7 +1,7 @@
 /**
  * Install dependencies for optional features.
  */
-import { Args, Command, Flags } from "@oh-my-pi/pi-utils/cli";
+import { Args, Command, Flags, renderCommandHelp } from "@oh-my-pi/pi-utils/cli";
 import { runSetupCommand, type SetupCommandArgs, type SetupComponent } from "../cli/setup-cli";
 import { initTheme } from "../modes/theme/theme";
 
@@ -24,7 +24,19 @@ export default class Setup extends Command {
 	};
 
 	async run(): Promise<void> {
-		const { args, flags } = await this.parse(Setup);
+		const parseResult = await this.parse(Setup).catch((error: unknown) => {
+			if (!(error instanceof Error)) {
+				throw error;
+			}
+			process.stderr.write(`Error: ${error.message}\n\n`);
+			renderCommandHelp(this.config.bin, "setup", Setup);
+			process.exitCode = 1;
+			return undefined;
+		});
+		if (!parseResult) {
+			return;
+		}
+		const { args, flags } = parseResult;
 		const cmd: SetupCommandArgs = {
 			component: args.component as SetupComponent,
 			flags: {

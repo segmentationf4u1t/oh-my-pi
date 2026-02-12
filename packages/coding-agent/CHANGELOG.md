@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed `omp setup` to show friendly error/help for missing or invalid component arguments instead of surfacing an uncaught exception ([#35](https://github.com/can1357/oh-my-pi/issues/35))
+
 ## [11.14.4] - 2026-02-12
 
 ### Added
