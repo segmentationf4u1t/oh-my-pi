@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed package import/startup to keep fastembed's older ONNX Runtime binding lazy, preventing it from preloading ORT 1.21 before transformers.js local smol/title models require ORT API 24.
+
 ## [15.6.0] - 2026-05-30
 
 ### Added

@@ -1,5 +1,5 @@
 import { mkdirSync } from "node:fs";
-import { EmbeddingModel, FlagEmbedding } from "fastembed";
+import { createRequire } from "node:module";
 import { getMnemosyneRuntimeOptions, resolveEmbeddingProvider } from "./runtime-options";
 
 export type Vector = number[];
@@ -10,7 +10,14 @@ export interface EmbeddingProvider {
 	available?(): boolean | Promise<boolean>;
 }
 
-type StandardEmbeddingModel = Exclude<EmbeddingModel, EmbeddingModel.CUSTOM>;
+type StandardEmbeddingModel =
+	| "fast-all-MiniLM-L6-v2"
+	| "fast-bge-base-en"
+	| "fast-bge-base-en-v1.5"
+	| "fast-bge-small-en"
+	| "fast-bge-small-en-v1.5"
+	| "fast-bge-small-zh-v1.5"
+	| "fast-multilingual-e5-large";
 
 interface LocalEmbeddingModel {
 	embed(texts: string[], batchSize?: number): unknown;
@@ -24,8 +31,17 @@ type LocalModelInitOptions = {
 };
 type LocalModelInitializer = (options: LocalModelInitOptions) => Promise<LocalEmbeddingModel>;
 
+interface FastembedRuntime {
+	FlagEmbedding: {
+		init(options: LocalModelInitOptions): Promise<LocalEmbeddingModel>;
+	};
+}
+
 const FASTEMBED_CACHE_DIR = `${process.env.HOME ?? ""}/.hermes/cache/fastembed`;
+const FASTEMBED_PACKAGE = "fastembed";
+const ONNXRUNTIME_PACKAGE = "onnxruntime-node";
 const QUERY_CACHE_MAX = 512;
+const sourceRequire = createRequire(import.meta.url);
 
 let providerOverride: EmbeddingProvider | null = null;
 let localModelPromise: Promise<LocalEmbeddingModel> | null = null;
@@ -33,8 +49,16 @@ let localModelInitializer: LocalModelInitializer = defaultLocalModelInitializer;
 let apiCallCount = 0;
 const queryCache = new Map<string, Vector>();
 
+// fastembed pins onnxruntime-node 1.21. Load the package-owned ORT 1.24
+// binding first so a process that later uses transformers.js (ORT API 24)
+// cannot inherit fastembed's older runtime DLL on Windows.
+function loadFastembedRuntime(): FastembedRuntime {
+	sourceRequire(ONNXRUNTIME_PACKAGE);
+	return sourceRequire(FASTEMBED_PACKAGE) as FastembedRuntime;
+}
+
 function defaultLocalModelInitializer(options: LocalModelInitOptions): Promise<LocalEmbeddingModel> {
-	return FlagEmbedding.init(options) as Promise<LocalEmbeddingModel>;
+	return loadFastembedRuntime().FlagEmbedding.init(options);
 }
 
 function activeEmbeddingOptions() {
@@ -244,13 +268,13 @@ function cacheSet(key: string, value: Vector): void {
 
 function fastembedModelName(modelName: string): StandardEmbeddingModel | null {
 	const known: Record<string, StandardEmbeddingModel> = {
-		"BAAI/bge-small-en-v1.5": EmbeddingModel.BGESmallENV15,
-		"BAAI/bge-base-en-v1.5": EmbeddingModel.BGEBaseENV15,
-		"BAAI/bge-small-en": EmbeddingModel.BGESmallEN,
-		"BAAI/bge-base-en": EmbeddingModel.BGEBaseEN,
-		"BAAI/bge-small-zh-v1.5": EmbeddingModel.BGESmallZH,
-		"intfloat/multilingual-e5-large": EmbeddingModel.MLE5Large,
-		"sentence-transformers/all-MiniLM-L6-v2": EmbeddingModel.AllMiniLML6V2,
+		"BAAI/bge-small-en-v1.5": "fast-bge-small-en-v1.5",
+		"BAAI/bge-base-en-v1.5": "fast-bge-base-en-v1.5",
+		"BAAI/bge-small-en": "fast-bge-small-en",
+		"BAAI/bge-base-en": "fast-bge-base-en",
+		"BAAI/bge-small-zh-v1.5": "fast-bge-small-zh-v1.5",
+		"intfloat/multilingual-e5-large": "fast-multilingual-e5-large",
+		"sentence-transformers/all-MiniLM-L6-v2": "fast-all-MiniLM-L6-v2",
 	};
 	return known[modelName] ?? null;
 }
